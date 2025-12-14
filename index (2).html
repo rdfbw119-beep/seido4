@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>制度候補チェッカー</title>
+  <style>
+    :root{
+      --bg:#070a14;
+      --text:#ecf2ff;
+      --muted:#aab2d6;
+      --accent:#7dd3fc;
+      --accent2:#a78bfa;
+      --warn:#fbbf24;
+      --good:#34d399;
+      --shadow: 0 18px 55px rgba(0,0,0,.55);
+      --radius: 20px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+        "Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+      background:
+        radial-gradient(1100px 650px at 15% 12%, rgba(125,211,252,.20), transparent 62%),
+        radial-gradient(1100px 650px at 82% 28%, rgba(167,139,250,.18), transparent 64%),
+        radial-gradient(900px 520px at 55% 95%, rgba(52,211,153,.10), transparent 60%),
+        linear-gradient(180deg, #050712, var(--bg));
+      overflow-x:hidden;
+    }
+    .wrap{ max-width: 1120px; margin: 0 auto; padding: 18px 14px 44px; }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .header{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      padding: 18px 18px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow:hidden;
+    }
+    .header:before{
+      content:"";
+      position:absolute; inset:-40px;
+      background:
+        radial-gradient(500px 240px at 20% 25%, rgba(125,211,252,.22), transparent 65%),
+        radial-gradient(520px 260px at 85% 35%, rgba(167,139,250,.18), transparent 68%);
+      filter: blur(8px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .header > *{ position:relative; z-index:1; }
+    h1{ margin:0; font-size:20px; letter-spacing:.02em; }
+    .sub{ margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.5; max-width: 780px;}
+    .badge{
+      display:inline-flex; gap:8px; align-items:center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 18px rgba(125,211,252,.55);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 14px;
+    }
+    @media (max-width: 960px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .panel{ padding: 16px; }
+    .panel h2{
+      margin:0 0 10px;
+      font-size: 14px;
+      letter-spacing:.02em;
+      display:flex; align-items:center; gap:8px;
+    }
+    .chip{
+      font-size:11px;
+      color: rgba(236,242,255,.9);
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      padding: 4px 8px;
+      border-radius: 999px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    @media (max-width: 560px){
+      .row{ grid-template-columns: 1fr; }
+    }
+
+    label{ display:block; font-size: 12px; color: var(--muted); }
+    input, select{
+      width:100%;
+      margin-top: 6px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(10, 16, 34, .62);
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s ease, transform .08s ease, background .2s ease;
+    }
+    input::placeholder{ color: rgba(233,236,255,.45); }
+    input:focus, select:focus{
+      border-color: rgba(125,211,252,.55);
+      box-shadow: 0 0 0 3px rgba(125,211,252,.12);
+      background: rgba(10, 16, 34, .72);
+    }
+
+    .checks{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+      margin-top: 12px;
+    }
+    @media (max-width: 560px){
+      .checks{ grid-template-columns: 1fr; }
+    }
+    .chk{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      font-size: 13px;
+      transition: transform .08s ease, border-color .2s ease, background .2s ease;
+      user-select:none;
+    }
+    .chk:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
+    .chk input{ width:auto; margin:0; accent-color: #7dd3fc; }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 12px;
+    }
+    .btn{
+      border:none;
+      cursor:pointer;
+      padding: 11px 12px;
+      border-radius: 14px;
+      font-weight: 900;
+      letter-spacing: .02em;
+      transition: transform .06s ease, filter .2s ease, box-shadow .2s ease;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width: 150px;
+      position: relative;
+      overflow:hidden;
+    }
+    .btn:before{
+      content:"";
+      position:absolute; inset:-40%;
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.35), transparent 55%);
+      transform: translateX(-35%);
+      opacity:.0;
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .btn:hover:before{ opacity:.55; transform: translateX(0%); }
+    .btn:hover{ filter: brightness(1.03); }
+    .btn:active{ transform: translateY(1px); }
+
+    .btn.primary{
+      color: #071018;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 14px 35px rgba(0,0,0,.35);
+    }
+    .btn.ghost{
+      color: var(--text);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: none;
+    }
+    .btn.warn{
+      color:#1a1406;
+      background: linear-gradient(135deg, #fde68a, var(--warn));
+      box-shadow: 0 14px 35px rgba(0,0,0,.25);
+    }
+
+    .note{
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      border-top: 1px dashed rgba(255,255,255,.12);
+      padding-top: 10px;
+    }
+
+    .summary{
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .results{
+      margin-top: 12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height: 120px;
+    }
+
+    .resultCard{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(10, 16, 34, .52);
+      border-radius: 16px;
+      padding: 12px;
+      animation: pop .18s ease-out both;
+    }
+    @keyframes pop{
+      from{ transform: translateY(6px); opacity: .0; }
+      to{ transform: translateY(0); opacity: 1; }
+    }
+    .resultTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .resultTitle{ font-weight: 950; letter-spacing: .02em; }
+    .tag{
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      padding: 6px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .points{ margin-top: 8px; color: rgba(236,242,255,.92); font-size: 13px; line-height: 1.65; }
+    .points ul{ margin: 6px 0 0; padding-left: 18px; }
+    .points li{ margin: 3px 0; }
+    .hint{ margin-top: 8px; color: var(--muted); font-size: 12px; line-height:1.55; }
+    .amount{
+      margin-top: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      padding: 10px 10px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .amount .l{ font-size:12px; color: var(--muted); }
+    .amount .r{ font-size:13px; font-weight: 900; letter-spacing:.02em; color: rgba(236,242,255,.98); text-align:right; }
+
+    .cta.inner{
+      margin-top: 12px;
+      padding: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      box-shadow: none;
+    }
+    .ctaTitle{ font-weight: 950; }
+    .ctaSub{ color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+    .disclaimer{
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .footer{
+      margin-top: 14px;
+      color: rgba(170,178,214,.75);
+      font-size: 12px;
+      text-align:center;
+    }
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(17, 26, 51, .92);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(236,242,255,.95);
+      padding: 10px 12px;
+      border-radius: 999px;
+      box-shadow: 0 16px 45px rgba(0,0,0,.45);
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .2s ease, transform .2s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(-6px);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="header card">
+      <div>
+        <h1>制度候補チェッカー</h1>
+        <p class="sub">入力内容から「今の状況で確認すべき制度」を候補として表示します（目安）。金額はケースにより幅があります。</p>
+      </div>
+      <div class="badge"><span class="dot"></span><span>オフライン対応</span></div>
+    </header>
+
+    <main class="grid">
+      <section class="card panel">
+        <h2>入力 <span class="chip">自動計算つき</span></h2>
+
+        <div class="row">
+          <label>年齢
+            <input id="age" type="number" min="0" max="120" placeholder="例：62" />
+          </label>
+          <label>居住地（都道府県）
+            <select id="pref">
+              <option value="">選択（任意）</option>
+              <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option>
+              <option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option>
+              <option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option><option>岐阜県</option><option>静岡県</option><option>愛知県</option>
+              <option>三重県</option><option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option>
+              <option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option>
+              <option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option>
+              <option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>就業状況
+            <select id="work">
+              <option value="working">働いている</option>
+              <option value="unemployed">離職中</option>
+              <option value="leave">休職中</option>
+              <option value="student">学生</option>
+              <option value="homemaker">無職（家事・育児など）</option>
+            </select>
+          </label>
+          <label>世帯の今の収入感
+            <select id="income">
+              <option value="unknown">わからない/未入力</option>
+              <option value="low">低め（生活がかなり厳しい）</option>
+              <option value="mid">中くらい（節約すれば回る）</option>
+              <option value="high">高め（支援は少なそう）</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>住民税非課税（目安）
+            <select id="taxfree">
+              <option value="unknown">不明</option>
+              <option value="yes">たぶん非課税</option>
+              <option value="no">非課税ではない</option>
+            </select>
+          </label>
+          <label>直近の家計の状態
+            <select id="money">
+              <option value="ok">なんとか払えている</option>
+              <option value="tight">支払いがきつい</option>
+              <option value="late">滞納・延滞が出ている</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>現在の月給（手取りではなく目安・任意）
+            <input id="salary" type="number" min="0" step="1000" placeholder="例：400000" />
+          </label>
+          <label>（任意）家賃の目安
+            <input id="rent" type="number" min="0" step="1000" placeholder="例：85000" />
+          </label>
+        </div>
+
+        <div class="checks">
+          <label class="chk"><input id="hasKids" type="checkbox" /> 子どもがいる</label>
+          <label class="chk"><input id="jobSearch" type="checkbox" /> 求職中</label>
+          <label class="chk"><input id="unableWork" type="checkbox" /> 働けない期間がある（体調など）</label>
+          <label class="chk"><input id="medicalHigh" type="checkbox" /> 医療費が増えている</label>
+        </div>
+
+        <div class="actions">
+          <button id="btnCheck" class="btn primary" type="button">候補を表示</button>
+          <button id="btnReset" class="btn ghost" type="button">リセット</button>
+          <button id="btnCopy" class="btn warn" type="button">結果をコピー</button>
+        </div>
+
+        <div class="note">
+          ※金額は「一般的な目安」です。自治体や加入保険、個別状況で変わります。最終判定は窓口でご確認ください。
+        </div>
+      </section>
+
+      <section class="card panel">
+        <h2>結果 <span class="chip">金額目安あり</span></h2>
+        <div id="summary" class="summary">条件を入力して「候補を表示」を押してください。</div>
+        <div id="results" class="results"></div>
+
+        <div class="cta card inner">
+          <div>
+            <div class="ctaTitle">次の行動</div>
+            <div class="ctaSub">あなたの状況に合う制度をまとめて確認できます。</div>
+          </div>
+          <a id="ctaLink" class="btn primary" href="https://example.com" target="_blank" rel="noopener">プロフリンクへ</a>
+        </div>
+
+        <div class="disclaimer">
+          <b>免責：</b>本ツールは一般情報であり、給付の確約・助言ではありません。表示金額は目安です。
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">© 制度候補チェッカー</footer>
+  </div>
+
+  <div id="toast" class="toast">コピーしました</div>
+
+  <script>
+    (function(){
+      const $ = (id) => document.getElementById(id);
+      const toast = $("toast");
+      const showToast = (msg) => {
+        toast.textContent = msg;
+        toast.classList.add("show");
+        setTimeout(()=>toast.classList.remove("show"), 1100);
+      };
+
+      // ★ あなたの導線URLに変更
+      const CTA_URL = "https://example.com";
+      $("ctaLink").href = CTA_URL;
+
+      const yen = (n) => {
+        if (!isFinite(n)) return "";
+        return Math.round(n).toLocaleString("ja-JP");
+      };
+
+      const readState = () => ({
+        age: Number($("age").value || 0),
+        pref: $("pref").value || "",
+        work: $("work").value,
+        income: $("income").value,
+        taxfree: $("taxfree").value,
+        money: $("money").value,
+        salary: Number($("salary").value || 0),
+        rent: Number($("rent").value || 0),
+        hasKids: $("hasKids").checked,
+        jobSearch: $("jobSearch").checked,
+        unableWork: $("unableWork").checked,
+        medicalHigh: $("medicalHigh").checked
+      });
+
+      // 目安レンジの作り方：断定しない／幅を持たせる
+      const sicknessAmountText = (s) => {
+        const months = 18;
+        if (!s.salary || s.salary <= 0){
+          return {
+            headline: "月給の約3分の2前後 × 最長18か月（目安）",
+            detail: "例：月給を入力すると、月・合計の目安を自動計算します。"
+          };
+        }
+        const monthlyMid = s.salary * (2/3);        // 約 66.7%
+        const monthlyLow = s.salary * 0.60;         // 幅の下限（目安）
+        const monthlyHigh = s.salary * 0.70;        // 幅の上限（目安）
+        const totalMid = monthlyMid * months;
+        return {
+          headline: `月 ${yen(monthlyLow)}〜${yen(monthlyHigh)}円前後（目安）`,
+          detail: `例：月給${yen(s.salary)}円 → 月 約${yen(monthlyMid)}円（約3分の2） × 最長${months}か月 → 合計 約${yen(totalMid)}円前後`
+        };
+      };
+
+      const rentSupportText = (s) => {
+        if (s.rent && s.rent > 0){
+          const low = Math.max(0, s.rent * 0.6);
+          const high = s.rent * 1.0;
+          return `月 ${yen(low)}〜${yen(high)}円前後（家賃相当の範囲で目安）`;
+        }
+        return "月 数万円〜10万円前後（家賃相当で変動）";
+      };
+
+      const PROGRAMS = [
+        {
+          title:"医療費の負担軽減（高額療養費など）",
+          tag:"全年齢",
+          when:(s)=> true,
+          amount:(s)=> s.medicalHigh ? "月 数万円〜10万円以上 軽くなるケース" : "医療費が増えたときに負担が軽くなる可能性",
+          points:[
+            "医療費が増えたときに確認対象",
+            "加入している保険（国保/社保など）で手続きが異なります"
+          ],
+          where:"確認先：加入している保険の窓口（協会けんぽ/健保/市区町村など）"
+        },
+        {
+          title:"介護保険料の軽減・減免（候補）",
+          tag:"高齢者に多い",
+          when:(s)=> (s.age>=65) || s.taxfree==="yes" || s.income==="low",
+          amount:(s)=> "年 1〜5万円前後 軽くなるケース（自治体差あり）",
+          points:[
+            "収入が下がった／非課税に近い場合に確認対象",
+            "市区町村ごとに条件が異なります"
+          ],
+          where:"確認先：市区町村の介護保険窓口"
+        },
+        {
+          title:"国民健康保険料の軽減・減免（候補）",
+          tag:"退職・収入減",
+          when:(s)=> s.work==="unemployed" || s.income==="low" || s.money!=="ok",
+          amount:(s)=> "年 数万円〜数十万円 軽くなる可能性",
+          points:[
+            "退職や収入減のあとに負担が増えた場合に確認対象",
+            "前年所得などで判定が変わります"
+          ],
+          where:"確認先：市区町村の保険年金窓口"
+        },
+        {
+          title:"住民税の減免・猶予（候補）",
+          tag:"支払いが厳しい",
+          when:(s)=> s.money==="tight" || s.money==="late" || s.income==="low",
+          amount:(s)=> "年 数万円規模 軽くなる可能性",
+          points:[
+            "収入減・医療費増などで支払いが厳しい場合に確認対象",
+            "減免/猶予などの扱いは自治体で異なります"
+          ],
+          where:"確認先：市区町村の税務（住民税）窓口"
+        },
+        {
+          title:"生活困窮者自立支援（相談窓口）",
+          tag:"家計が厳しい方向け",
+          when:(s)=> s.income==="low" || s.money!=="ok",
+          amount:(s)=> "（金額は制度ごとに異なるため、まず相談が入口）",
+          points:[
+            "家計が厳しいときの相談窓口",
+            "状況に応じて制度の案内・申請の入口になります"
+          ],
+          where:"確認先：自治体の福祉窓口 / 自立相談支援機関"
+        },
+        {
+          title:"住居確保給付金（家賃支援の候補）",
+          tag:"家賃が厳しい",
+          when:(s)=> (s.money==="tight"||s.money==="late") && (s.work==="unemployed"||s.income==="low"),
+          amount:(s)=> rentSupportText(s),
+          points:[
+            "離職・休業・収入減で家賃が厳しい場合に候補",
+            "自治体の相談窓口で確認します"
+          ],
+          where:"確認先：自治体の自立相談支援機関（福祉窓口）"
+        },
+        {
+          title:"雇用保険の基本手当（失業給付）",
+          tag:"離職中・求職中",
+          when:(s)=> s.work==="unemployed" && s.jobSearch===true,
+          amount:(s)=> "日額・期間は加入期間などで変動（目安：数か月〜）",
+          points:[
+            "離職中で求職活動がある場合に候補",
+            "加入期間・退職理由で条件や期間が変わります"
+          ],
+          where:"確認先：ハローワーク"
+        },
+        {
+          title:"子育て支援（児童手当・医療費助成など）",
+          tag:"子どもがいる",
+          when:(s)=> s.hasKids===true,
+          amount:(s)=> "自治体・年齢・所得で変動（まず自治体で確認）",
+          points:[
+            "子どもがいる世帯は自治体の子育て支援を確認対象",
+            "所得や年齢で区分が変わる場合があります"
+          ],
+          where:"確認先：市区町村の子育て窓口"
+        },
+        {
+          title:"傷病手当金（働けない期間の生活補填の候補）",
+          tag:"体調で休む場合",
+          when:(s)=> s.unableWork===true && (s.work==="leave" || s.work==="working"),
+          amount:(s)=> sicknessAmountText(s).headline,
+          points:[
+            "目安：月給の約3分の2前後（健康保険の加入等の条件あり）",
+            "最長18か月まで支給されるケースがあります（途中で条件変動あり）"
+          ],
+          where:"確認先：加入している健康保険の窓口（協会けんぽ/健保）"
+        }
+      ];
+
+      const escapeHtml = (str) => String(str)
+        .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+      const render = () => {
+        const s = readState();
+        const picked = PROGRAMS.filter(p => {
+          try { return p.when(s); } catch { return false; }
+        });
+
+        const parts = [];
+        parts.push(`候補：${picked.length}件`);
+        if (s.pref) parts.push(`居住：${s.pref}`);
+        if ($("age").value) parts.push(`年齢：${s.age}`);
+        if (s.salary>0) parts.push(`月給：${yen(s.salary)}円`);
+        $("summary").textContent = parts.join(" ｜ ");
+
+        const resultsEl = $("results");
+        resultsEl.innerHTML = "";
+
+        picked.forEach(p => {
+          const card = document.createElement("div");
+          card.className = "resultCard";
+
+          let extra = "";
+          if (p.title.startsWith("傷病手当金")){
+            const t = sicknessAmountText(s).detail;
+            extra = `<div class="hint">${escapeHtml(t)}</div>
+                     <div class="hint">※ 国民健康保険は原則対象外の場合があります。休職状況や医師の意見書など条件で変わります。</div>`;
+          }
+
+          card.innerHTML = `
+            <div class="resultTop">
+              <div class="resultTitle">${escapeHtml(p.title)}</div>
+              <div class="tag">${escapeHtml(p.tag)}</div>
+            </div>
+
+            <div class="amount">
+              <div class="l">金額の目安（幅）</div>
+              <div class="r">${escapeHtml(p.amount(s))}</div>
+            </div>
+
+            <div class="points">
+              <ul>${p.points.map(x=>`<li>${escapeHtml(x)}</li>`).join("")}</ul>
+              ${extra}
+              <div class="hint">${escapeHtml(p.where)}</div>
+            </div>
+          `;
+          resultsEl.appendChild(card);
+        });
+
+        showToast("候補を表示しました");
+      };
+
+      $("btnCheck").addEventListener("click", render);
+
+      $("btnReset").addEventListener("click", () => {
+        $("age").value="";
+        $("pref").value="";
+        $("work").value="working";
+        $("income").value="unknown";
+        $("taxfree").value="unknown";
+        $("money").value="ok";
+        $("salary").value="";
+        $("rent").value="";
+        $("hasKids").checked=false;
+        $("jobSearch").checked=false;
+        $("unableWork").checked=false;
+        $("medicalHigh").checked=false;
+        $("summary").textContent="条件を入力して「候補を表示」を押してください。";
+        $("results").innerHTML="";
+        showToast("リセットしました");
+      });
+
+      $("btnCopy").addEventListener("click", async () => {
+        const resultsEl = $("results");
+        const text = resultsEl.innerText || "候補はありません";
+        try{
+          await navigator.clipboard.writeText(text);
+          showToast("コピーしました");
+        }catch{
+          alert("コピーがブロックされました（表示は正常です）。");
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
